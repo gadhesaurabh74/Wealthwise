@@ -1,0 +1,4 @@
+import { useEffect, useState } from 'react';
+import { apiRequest } from '../lib/api.js';
+
+export default function MoneyLeaks() { const [items, setItems] = useState([]); const [error, setError] = useState(''); useEffect(() => { apiRequest('/insights/money-leaks').then((data) => setItems(data.items || [])).catch((requestError) => setError(requestError.message)); }, []); return <main className="app-content"><div className="eyebrow">Pattern detection</div><h2>Money leak detective</h2><section className="data-panel">{error && <p>{error}</p>}{items.length ? items.map((item) => <div className="transaction-row" key={`${item.merchant}-${item.estimatedImpact}`}><div><b>{item.merchant}</b><small>{item.explanation}</small></div><strong>${item.estimatedImpact.toFixed(2)}</strong></div>) : !error && <p>Not enough repeated activity to identify a pattern yet.</p>}</section></main>; }

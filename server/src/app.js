@@ -14,6 +14,7 @@ import subscriptionRoutes from './routes/subscriptionRoutes.js';
 import importRoutes from './routes/importRoutes.js';
 import reportRoutes from './routes/reportRoutes.js';
 import exportRoutes from './routes/exportRoutes.js';
+import bankRoutes from './routes/bankRoutes.js';
 
 export const app = express();
 app.use(helmet());
@@ -33,6 +34,7 @@ app.use('/api', subscriptionRoutes);
 app.use('/api', importRoutes);
 app.use('/api', reportRoutes);
 app.use('/api', exportRoutes);
+app.use('/api', bankRoutes);
 app.use((error, _req, res, _next) => {
   console.error(error.message);
   return res.status(500).json({ error: 'The server could not complete that request.' });

@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
-import { Link, NavLink, Route, Routes } from "react-router-dom";
+import { Link, NavLink, Route, Routes, useNavigate } from "react-router-dom";
 import {
   ArrowRight,
   BarChart3,
   Bell,
   CalendarDays,
-  CircleHelp,
   CreditCard,
   Goal,
   Home,
   Menu,
+  LogOut,
+  Repeat2,
   Sparkles,
   X,
 } from "lucide-react";
@@ -29,6 +30,7 @@ import ScheduledExpenses from "./components/ScheduledExpenses.jsx";
 import LegalPage from "./components/LegalPage.jsx";
 import ForgotPassword from "./components/ForgotPassword.jsx";
 import Forecast from "./components/Forecast.jsx";
+import AccountPage from "./components/AccountPage.jsx";
 
 const navItems = [
   { label: "Overview", icon: Home, path: "/app" },
@@ -36,6 +38,7 @@ const navItems = [
   { label: "Calendar", icon: CalendarDays, path: "/app/calendar" },
   { label: "Budgets", icon: BarChart3, path: "/app/budgets" },
   { label: "Goals", icon: Goal, path: "/app/goals" },
+  { label: "Recurring bills", icon: Repeat2, path: "/app/scheduled-expenses" },
   { label: "Forecast", icon: Sparkles, path: "/app/forecast" },
 ];
 function Landing() {
@@ -230,7 +233,8 @@ function AuthPage({ mode }) {
     </div>
   );
 }
-function Shell({ user }) {
+function Shell({ user, onUserUpdate }) {
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -267,16 +271,7 @@ function Shell({ user }) {
           ))}
         </nav>
         <div className="side-bottom">
-          <div className="upgrade-card">
-            <Sparkles size={18} />
-            <b>More clarity awaits</b>
-            <p>Advanced insights are coming in Plus.</p>
-          </div>
-          <NavLink className="side-link" to="/app/settings">
-            <CircleHelp size={18} />
-            <span>Settings & help</span>
-          </NavLink>
-          <button className="logout-button" onClick={logout}>Log out</button>
+          <button className="logout-button" onClick={logout}><LogOut size={17} /><span>Log out</span></button>
         </div>
       </aside>
       <div className="app-main">
@@ -293,13 +288,14 @@ function Shell({ user }) {
               <Bell size={18} />
             </button>
             {notificationsOpen && <div className="notification-popover"><div className="notification-heading"><b>Notifications</b><span>Live workspace</span></div><div className="notification-item"><span className="notification-dot" /><div><b>Keep your picture current</b><p>Add transactions and scheduled expenses to unlock more useful insights.</p></div></div><div className="notification-item"><span className="notification-dot muted" /><div><b>No urgent alerts</b><p>There are no new warnings based on your recorded data.</p></div></div></div>}
-            <button className="profile-avatar-button" onClick={() => setProfileOpen(!profileOpen)} aria-label="Open profile menu">{user.name.slice(0, 2).toUpperCase()}</button>
+            <button className="profile-avatar-button" onClick={() => navigate('/app/account')} aria-label="Open account settings">{user.name.slice(0, 2).toUpperCase()}</button>
             {profileOpen && <form className="profile-popover" onSubmit={updateProfile}><div className="notification-heading"><b>Your profile</b><span>Account details</span></div><label>Name<input value={profile.name} onChange={(event) => setProfile({ ...profile, name: event.target.value })} required minLength="2" /></label><label>Currency<input value={profile.currency} onChange={(event) => setProfile({ ...profile, currency: event.target.value.toUpperCase() })} maxLength="3" required /></label><label>Timezone<input value={profile.timezone} onChange={(event) => setProfile({ ...profile, timezone: event.target.value })} /></label>{profileMessage && <p className="form-message">{profileMessage}</p>}<button className="button button-primary" type="submit">Update profile</button></form>}
           </div>
         </header>
         <Routes>
           <Route index element={<Overview />} />
           <Route path="transactions" element={<Transactions />} />
+          <Route path="transactions/all" element={<Transactions />} />
           <Route path="budgets" element={<Budgets />} />
           <Route path="goals" element={<Goals />} />
           <Route path="calendar" element={<Calendar />} />
@@ -310,6 +306,7 @@ function Shell({ user }) {
           <Route path="import" element={<Import />} />
           <Route path="scheduled-expenses" element={<ScheduledExpenses />} />
           <Route path="forecast" element={<Forecast />} />
+          <Route path="account" element={<AccountPage user={user} onUserUpdate={onUserUpdate} />} />
           <Route path="*" element={<Overview />} />
         </Routes>
       </div>
@@ -326,7 +323,7 @@ function ProtectedShell() {
       });
   }, []);
   return user ? (
-    <Shell user={user} />
+    <Shell user={user} onUserUpdate={setUser} />
   ) : (
     <div className="placeholder-panel">
       <p>Loading your secure workspace...</p>

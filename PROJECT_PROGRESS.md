@@ -35,7 +35,12 @@ Phase 3 - Core finance management (in progress).
 - Added Recharts to the client and responsive income-vs-expense and category-mix charts to `Overview.jsx`.
 - Fixed overview response handling for empty/non-JSON API responses and replaced the hardcoded greeting with the authenticated user's name.
 - Added frontend forgot-password flow for backend Nodemailer OTP request, verification, and password reset.
+- Added synthetic `bank` collection with protected demo-bank fetch/import endpoints, regex merchant categorization, and a complete expense-category dropdown.
+- Added future-date validation for manual transaction create/update, CSV imports, and the transaction date input; backend validation remains authoritative.
+- Added goal editing UI for name, target amount, saved amount, and target date using the authenticated goal update endpoint.
+- Added authenticated goal deletion with confirmation in the Goals UI.
 - Updated weekly trend mode to group the current month into Week 1 through Week 4/5 buckets.
+- Hardened the Vite API proxy to target `127.0.0.1:4000` with explicit origin handling, reducing local `502 Bad Gateway` failures.
 - Added modular scheduled-expense management screen with create and deactivate actions.
 - Added authenticated CSV transaction export endpoint and documented public privacy/terms work as the remaining final polish.
 

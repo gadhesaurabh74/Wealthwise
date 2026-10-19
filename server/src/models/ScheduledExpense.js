@@ -8,6 +8,7 @@ const scheduledExpenseSchema = new mongoose.Schema({
   frequency: { type: String, enum: ['once', 'weekly', 'monthly', 'quarterly', 'yearly'], default: 'once' },
   nextDueDate: { type: Date, required: true, index: true },
   active: { type: Boolean, default: true },
+  lastProcessedAt: { type: Date },
 }, { timestamps: true });
 
 scheduledExpenseSchema.index({ userId: 1, nextDueDate: 1 });

@@ -30,7 +30,7 @@ const issueSession = (res, user) =>
     cookieOptions,
   );
 const otpHash = (otp) => crypto.createHash("sha256").update(otp).digest("hex");
-const mailer = process.env.SMTP_HOST
+const mailer = process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS
   ? nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: Number(process.env.SMTP_PORT || 587),
@@ -143,6 +143,7 @@ router.post("/forgot-password", async (req, res, next) => {
         to: user.email,
         subject: "Your SpendSense password reset code",
         text: `Your one-time code is ${otp}. It expires in five minutes.`,
+        html: `<div style="font-family:Arial,sans-serif;max-width:520px;color:#102033"><h2>Reset your SpendSense password</h2><p>Use this one-time verification code to continue:</p><p style="font-size:30px;font-weight:700;letter-spacing:8px;color:#059669">${otp}</p><p>This code expires in five minutes. If you did not request this, you can ignore this email.</p></div>`,
       });
     }
     return res.json({

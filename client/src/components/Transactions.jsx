@@ -1,125 +1,20 @@
-import { useEffect, useState } from "react";
-import { ArrowRight } from "lucide-react";
-import { apiRequest } from "../lib/api.js";
-import { Button } from "./ui.jsx";
+import { useEffect, useState } from 'react';
+import { ArrowRight, Download, FileText, Search } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { apiRequest, API_URL } from '../lib/api.js';
+import { Button } from './ui.jsx';
 
+const emptyFilters = { search: '', type: '', category: '', source: '', from: '', to: '', minAmount: '', maxAmount: '', sort: 'date-desc' };
 export default function Transactions() {
-  const [items, setItems] = useState([]);
-  const [message, setMessage] = useState("");
-  const [form, setForm] = useState({
-    type: "expense",
-    amount: "",
-    category: "",
-    merchant: "",
-    date: new Date().toISOString().slice(0, 10),
-  });
-  useEffect(() => {
-    apiRequest("/transactions")
-      .then((data) => setItems(data.items || []))
-      .catch(() => setMessage("Could not load transactions."));
-  }, []);
-  const update = (event) =>
-    setForm({ ...form, [event.target.name]: event.target.value });
-  const submit = async (event) => {
-    event.preventDefault();
-    try {
-      const data = await apiRequest("/transactions", {
-        method: "POST",
-        body: JSON.stringify(form),
-      });
-      setItems([data.item, ...items]);
-      setForm({ ...form, amount: "", merchant: "" });
-      setMessage("Transaction added.");
-    } catch (error) {
-      setMessage(error.message);
-    }
-  };
-  return (
-    <main className="app-content">
-      <div className="dashboard-heading">
-        <div>
-          <span className="eyebrow">Your ledger</span>
-          <h2>Transactions</h2>
-        </div>
-      </div>
-      <div className="finance-layout">
-        <form className="data-panel transaction-form" onSubmit={submit}>
-          <h3>Add a transaction</h3>
-          <label>
-            Type
-            <select name="type" value={form.type} onChange={update}>
-              <option value="expense">Expense</option>
-              <option value="income">Income</option>
-            </select>
-          </label>
-          <label>
-            Amount
-            <input
-              name="amount"
-              value={form.amount}
-              onChange={update}
-              required
-              min="0.01"
-              step="0.01"
-              type="number"
-            />
-          </label>
-          <label>
-            Category
-            <input
-              name="category"
-              value={form.category}
-              onChange={update}
-              required
-              placeholder="Food"
-            />
-          </label>
-          <label>
-            Merchant
-            <input name="merchant" value={form.merchant} onChange={update} />
-          </label>
-          <label>
-            Date
-            <input
-              name="date"
-              value={form.date}
-              onChange={update}
-              required
-              type="date"
-            />
-          </label>
-          {message && <p>{message}</p>}
-          <Button>
-            Add transaction <ArrowRight size={15} />
-          </Button>
-        </form>
-        <section className="data-panel transaction-list">
-          <div className="panel-title">
-            <h3>Recent activity</h3>
-            <span>{items.length} shown</span>
-          </div>
-          {items.length ? (
-            items.map((item) => (
-              <div className="transaction-row" key={item._id}>
-                <span className="transaction-icon">
-                  {item.type === "income" ? "+" : "-"}
-                </span>
-                <div>
-                  <b>{item.merchant || item.category}</b>
-                  <small>
-                    {item.category} · {new Date(item.date).toLocaleDateString()}
-                  </small>
-                </div>
-                <strong>
-                  {item.type === "income" ? "+" : "-"}${item.amount.toFixed(2)}
-                </strong>
-              </div>
-            ))
-          ) : (
-            <p>Your transactions will appear here after you add them.</p>
-          )}
-        </section>
-      </div>
-    </main>
-  );
+  const compact = useLocation().pathname === '/app/transactions';
+  const [items, setItems] = useState([]); const [categories, setCategories] = useState([]); const [filters, setFilters] = useState(emptyFilters); const [page, setPage] = useState(1); const [meta, setMeta] = useState({ total: 0, pages: 1 }); const [message, setMessage] = useState(''); const [form, setForm] = useState({ type: 'expense', amount: '', category: '', merchant: '', date: new Date().toISOString().slice(0, 10) });
+  const load = async (nextPage = page) => { const params = new URLSearchParams({ ...filters, page: nextPage, limit: compact ? 5 : 10 }); try { const data = await apiRequest(`/transactions?${params}`); setItems(data.items || []); setMeta(data); } catch (error) { setMessage(error.message); } };
+  useEffect(() => { apiRequest('/categories').then((data) => setCategories(data.items || [])); }, []); useEffect(() => { load(); }, [page, filters, compact]);
+  const update = (event) => setForm({ ...form, [event.target.name]: event.target.value });
+  const submit = async (event) => { event.preventDefault(); try { await apiRequest('/transactions', { method: 'POST', body: JSON.stringify(form) }); setForm({ ...form, amount: '', merchant: '' }); setMessage('Transaction added.'); setPage(1); load(1); } catch (error) { setMessage(error.message); } };
+  const setFilter = (event) => { setFilters({ ...filters, [event.target.name]: event.target.value }); setPage(1); }; const clearFilters = () => { setFilters(emptyFilters); setPage(1); };
+  const exportUrl = `${API_URL}/transactions/export?${new URLSearchParams(filters)}`;
+  const downloadExcel = async () => { const response = await fetch(exportUrl, { credentials: 'include' }); const url = URL.createObjectURL(await response.blob()); const link = document.createElement('a'); link.href = url; link.download = 'spendsense-transactions.xls'; link.click(); URL.revokeObjectURL(url); };
+  const downloadPdf = () => { const rows = items.map((item) => `<tr><td>${item.type}</td><td>${item.category}</td><td>${item.merchant || '-'}</td><td>${new Date(item.date).toLocaleDateString()}</td><td>Rs ${item.amount.toFixed(2)}</td></tr>`).join(''); const popup = window.open('', '_blank'); popup.document.write(`<html><head><title>SpendSense Transactions</title><style>body{font:14px Arial;padding:32px}table{border-collapse:collapse;width:100%}th,td{text-align:left;padding:10px;border-bottom:1px solid #ddd}th{background:#ecfdf5}</style></head><body><h1>SpendSense Transactions</h1><p>Filtered results: ${meta.total}</p><table><thead><tr><th>Type</th><th>Category</th><th>Merchant</th><th>Date</th><th>Amount</th></tr></thead><tbody>${rows}</tbody></table></body></html>`); popup.document.close(); popup.print(); };
+  return <main className={`app-content ${compact ? 'transactions-compact' : 'transactions-full'}`}><div className="dashboard-heading"><div><span className="eyebrow">Your ledger</span><h2>Transactions</h2></div></div><div className="finance-layout"><form className="data-panel transaction-form" onSubmit={submit}><h3>Add a transaction</h3><label>Type<select name="type" value={form.type} onChange={update}><option value="expense">Expense</option><option value="income">Income</option></select></label><label>Amount<input name="amount" value={form.amount} onChange={update} required min="0.01" step="0.01" type="number" /></label><label>Category<select name="category" value={form.category} onChange={update} required><option value="">Select category</option>{categories.map((category) => <option key={category} value={category}>{category}</option>)}</select></label><label>Merchant<input name="merchant" value={form.merchant} onChange={update} /></label><label>Date<input name="date" value={form.date} onChange={update} required type="date" max={new Date().toISOString().slice(0, 10)} /></label>{message && <p>{message}</p>}<Button>Add transaction <ArrowRight size={15} /></Button></form><section className="data-panel transaction-list transaction-table-panel"><div className="panel-title"><h3>{compact ? 'Recent activity' : 'All transactions'}</h3>{compact ? <Link className="show-more-link" to="/app/transactions/all">Show more</Link> : <span>{meta.total} matching</span>}</div><div className="transaction-filters"><label><Search size={15} /><input name="search" value={filters.search} onChange={setFilter} placeholder="Search merchant or category" /></label><select name="type" value={filters.type} onChange={setFilter}><option value="">All types</option><option value="expense">Expenses</option><option value="income">Income</option></select><select name="category" value={filters.category} onChange={setFilter}><option value="">All categories</option>{categories.map((category) => <option key={category} value={category}>{category}</option>)}</select><select name="source" value={filters.source} onChange={setFilter}><option value="">All sources</option><option value="manual">Manual</option><option value="bank">Bank</option><option value="csv">CSV</option></select><input name="from" type="date" value={filters.from} onChange={setFilter} /><input name="to" type="date" value={filters.to} onChange={setFilter} /><input name="minAmount" type="number" placeholder="Min amount" value={filters.minAmount} onChange={setFilter} /><input name="maxAmount" type="number" placeholder="Max amount" value={filters.maxAmount} onChange={setFilter} /><select name="sort" value={filters.sort} onChange={setFilter}><option value="date-desc">Newest first</option><option value="date-asc">Oldest first</option><option value="amount-desc">Highest amount</option><option value="amount-asc">Lowest amount</option></select><button type="button" className="text-button" onClick={clearFilters}>Clear</button></div><div className="export-actions"><button type="button" onClick={downloadExcel}><Download size={15} /> Excel</button><button type="button" onClick={downloadPdf}><FileText size={15} /> PDF</button></div><div className="transaction-table-wrap"><table className="transaction-table"><thead><tr><th>Transaction</th><th>Type</th><th>Category</th><th>Date</th><th>Source</th><th className="amount-cell">Amount</th></tr></thead><tbody>{items.map((item) => <tr key={item._id}><td><b>{item.merchant || 'Untitled transaction'}</b><small>{item.description || 'No description'}</small></td><td>{item.type}</td><td>{item.category}</td><td>{new Date(item.date).toLocaleDateString()}</td><td>{item.source || 'manual'}</td><td className="amount-cell"><strong className={item.type === 'income' ? 'income-text' : 'expense-text'}>{item.type === 'income' ? '+' : '-'}Rs {item.amount.toFixed(2)}</strong></td></tr>)}</tbody></table>{!items.length && <p>No transactions match these filters.</p>}</div><div className="pagination"><span>Page {meta.page || page} of {meta.pages || 1}</span><button type="button" disabled={page <= 1} onClick={() => setPage(page - 1)}>Previous</button><button type="button" disabled={page >= (meta.pages || 1)} onClick={() => setPage(page + 1)}>Next</button></div></section></div></main>;
 }
